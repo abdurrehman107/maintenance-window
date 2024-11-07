@@ -67,8 +67,7 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	endTime = &maintenanceWindow.Spec.EndTime
 
 	// Fetch current time 
-	var currentTime time.Time
-	currentTime = time.Now()
+	currentTime := time.Now()
 	
 	// scheduleMaintenance() begin a maintenance whenever called
 	var scheduledMaintenance = func (maintenanceWindow *maintenancecustomiov1.MaintenanceWindow) {
