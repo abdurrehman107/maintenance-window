@@ -1,0 +1,9 @@
+apiVersion: maintenance.custom.io.maintenence-window.io/v1
+kind: MaintenanceWindow
+metadata:
+  labels:
+    app.kubernetes.io/name: maintenance-window
+    app.kubernetes.io/managed-by: kustomize
+  name: maintenancewindow-sample
+spec:
+  # TODO(user): Add fields here
