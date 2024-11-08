@@ -17,10 +17,11 @@ limitations under the License.
 package v1
 
 import (
-	"time"
+	// "time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+// +kubebuilder:object:generate=true
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -29,8 +30,8 @@ import (
 type MaintenanceWindowSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	StartTime time.Time             `json:"startTime"`
-	EndTime   time.Time             `json:"endTime"`
+	StartTime metav1.Time             `json:"startTime"`
+	EndTime   metav1.Time             `json:"endTime"`
 	Enabled   bool                  `json:"enabled"`
 	Resources []*metav1.APIResource `json:"resources"`
 }

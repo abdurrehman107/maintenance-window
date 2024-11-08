@@ -18,9 +18,10 @@ package controller
 
 import (
 	"context"
-	"time"
+	// "time"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -61,14 +62,15 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Fetch startTime and endTime
-	var startTime *time.Time
-	var endTime *time.Time 
+	var startTime *metav1.Time
+	var endTime *metav1.Time 
+	var currentTime metav1.Time
 	startTime = &maintenanceWindow.Spec.StartTime
 	endTime = &maintenanceWindow.Spec.EndTime
+	currentTime = metav1.Now()
 
 	// Fetch current time 
-	currentTime := time.Now()
-	
+
 	// scheduleMaintenance() begin a maintenance whenever called
 	var scheduledMaintenance = func (maintenanceWindow *maintenancecustomiov1.MaintenanceWindow) {
 		maintenanceWindow.Status.Active = true
@@ -81,13 +83,13 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// 1. Scheudle a maintenance window if current time is less than startTime
 	// 2. If current time is greater than startTime and less than the endTime then immediately implement the maintenance window. 
 	// 3. If it is greater than the start and endTime both then add the respective object to the list of completed windows // delete it 
-	if currentTime.Before(*startTime) {
+	if currentTime.Before(startTime) {
 		// schedule the maintenance window object to start at the respective startTime (to be addressed later)
-		return ctrl.Result{RequeueAfter: startTime.Sub(currentTime)}, nil
-	} else if currentTime.After(*startTime) && currentTime.Before(*endTime) {
+		return ctrl.Result{RequeueAfter: startTime.Rfc3339Copy().Sub(currentTime.UTC())}, nil
+	} else if currentTime.After(startTime.Time) && currentTime.Before(endTime) {
 		// start the maintenance window right away 
 		scheduledMaintenance(&maintenanceWindow)
-	} else if currentTime.After(*endTime) {
+	} else if currentTime.After(endTime.Time) {
 		// add the object to the slice of completed workflow or just delete it
 		descheduleMaintenance(&maintenanceWindow)
 	}
