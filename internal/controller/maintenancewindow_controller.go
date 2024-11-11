@@ -20,8 +20,8 @@ import (
 	"context"
 	// "time"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -55,7 +55,7 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	l.Info("Initiated logger")
 	var maintenanceWindow maintenancecustomiov1.MaintenanceWindow
 
-	// Populate the maintenanceWindow object  
+	// Populate the maintenanceWindow object
 	if err := r.Get(ctx, req.NamespacedName, &maintenanceWindow); err != nil {
 		l.Error(err, "Unable to get the objects for maintenance window")
 		return ctrl.Result{}, err
@@ -63,31 +63,31 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Fetch startTime and endTime
 	var startTime *metav1.Time
-	var endTime *metav1.Time 
+	var endTime *metav1.Time
 	var currentTime metav1.Time
 	startTime = &maintenanceWindow.Spec.StartTime
 	endTime = &maintenanceWindow.Spec.EndTime
 	currentTime = metav1.Now()
 
-	// Fetch current time 
+	// Fetch current time
 
 	// scheduleMaintenance() begin a maintenance whenever called
-	var scheduledMaintenance = func (maintenanceWindow *maintenancecustomiov1.MaintenanceWindow) {
+	var scheduledMaintenance = func(maintenanceWindow *maintenancecustomiov1.MaintenanceWindow) {
 		maintenanceWindow.Status.Active = true
 	}
-	var descheduleMaintenance = func (maintenceWindow *maintenancecustomiov1.MaintenanceWindow) {
-		maintenceWindow.Status.Active = false 
+	var descheduleMaintenance = func(maintenceWindow *maintenancecustomiov1.MaintenanceWindow) {
+		maintenceWindow.Status.Active = false
 	}
-	// Validate currentTime is not more than startTime and endTime. 
+	// Validate currentTime is not more than startTime and endTime.
 	//
 	// 1. Scheudle a maintenance window if current time is less than startTime
-	// 2. If current time is greater than startTime and less than the endTime then immediately implement the maintenance window. 
-	// 3. If it is greater than the start and endTime both then add the respective object to the list of completed windows // delete it 
+	// 2. If current time is greater than startTime and less than the endTime then immediately implement the maintenance window.
+	// 3. If it is greater than the start and endTime both then add the respective object to the list of completed windows // delete it
 	if currentTime.Before(startTime) {
 		// schedule the maintenance window object to start at the respective startTime (to be addressed later)
 		return ctrl.Result{RequeueAfter: startTime.Rfc3339Copy().Sub(currentTime.UTC())}, nil
 	} else if currentTime.After(startTime.Time) && currentTime.Before(endTime) {
-		// start the maintenance window right away 
+		// start the maintenance window right away
 		scheduledMaintenance(&maintenanceWindow)
 	} else if currentTime.After(endTime.Time) {
 		// add the object to the slice of completed workflow or just delete it
