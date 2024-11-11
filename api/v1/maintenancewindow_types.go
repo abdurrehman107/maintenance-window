@@ -21,6 +21,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
 // +kubebuilder:object:generate=true
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -30,9 +31,10 @@ import (
 type MaintenanceWindowSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	StartTime metav1.Time             `json:"startTime"`
-	EndTime   metav1.Time             `json:"endTime"`
-	Enabled   bool                  `json:"enabled"`
+	StartTime metav1.Time `json:"startTime"`
+	EndTime   metav1.Time `json:"endTime"`
+	Enabled   bool        `json:"enabled"`
+	// +optional
 	Resources []*metav1.APIResource `json:"resources"`
 }
 

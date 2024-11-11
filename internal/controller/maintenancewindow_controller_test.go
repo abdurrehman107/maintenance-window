@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,6 +34,8 @@ import (
 var _ = Describe("MaintenanceWindow Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
+		startTime := metav1.Now()
+		endTime := startTime.Add(5 * time.Minute) // get time which is 5 minutes ahead of start time
 
 		ctx := context.Background()
 
@@ -51,7 +54,11 @@ var _ = Describe("MaintenanceWindow Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: maintenancecustomiov1.MaintenanceWindowSpec{
+						StartTime: startTime,
+						EndTime:   metav1.NewTime(endTime),
+						Enabled:   true,
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
