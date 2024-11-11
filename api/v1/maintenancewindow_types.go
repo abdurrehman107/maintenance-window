@@ -47,7 +47,6 @@ type ResourceType struct {
 
 // MaintenanceWindowStatus defines the observed state of MaintenanceWindow.
 type MaintenanceWindowStatus struct {
-	// +kubebuilder:default:=false
 	Active bool `json:"active"`
 }
 

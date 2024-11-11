@@ -61,21 +61,22 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	// Set the Status.Active to false upon detection of our object 
+	maintenanceWindow.Status.Active = false
+
 	// Fetch startTime and endTime
 	var startTime *metav1.Time
 	var endTime *metav1.Time
 	var currentTime metav1.Time
 	startTime = &maintenanceWindow.Spec.StartTime
 	endTime = &maintenanceWindow.Spec.EndTime
-	currentTime = metav1.Now()
-
-	// Fetch current time
-
-	// scheduleMaintenance() begin a maintenance whenever called
+	currentTime = metav1.Now() // Fetch current time
+	
+	// scheduleMaintenance() begin a maintenance window whenever called
 	var scheduledMaintenance = func(maintenanceWindow *maintenancecustomiov1.MaintenanceWindow) {
 		maintenanceWindow.Status.Active = true
 	}
-	var descheduleMaintenance = func(maintenceWindow *maintenancecustomiov1.MaintenanceWindow) {
+	var unscheduleMaintenance = func(maintenceWindow *maintenancecustomiov1.MaintenanceWindow) {
 		maintenceWindow.Status.Active = false
 	}
 	// Validate currentTime is not more than startTime and endTime.
@@ -89,9 +90,9 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	} else if currentTime.After(startTime.Time) && currentTime.Before(endTime) {
 		// start the maintenance window right away
 		scheduledMaintenance(&maintenanceWindow)
+		return ctrl.Result{RequeueAfter: currentTime.Rfc3339Copy().Sub(endTime.UTC())}, nil
 	} else if currentTime.After(endTime.Time) {
-		// add the object to the slice of completed workflow or just delete it
-		descheduleMaintenance(&maintenanceWindow)
+		unscheduleMaintenance(&maintenanceWindow)
 	}
 	return ctrl.Result{}, nil
 }
