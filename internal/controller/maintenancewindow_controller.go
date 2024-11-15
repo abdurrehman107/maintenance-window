@@ -72,10 +72,11 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	endTime = &maintenanceWindow.Spec.EndTime
 	currentTime = metav1.Now() // Fetch current time
 	
-	// scheduleMaintenance() begin a maintenance window whenever called
+	// scheduleMaintenance() begins a maintenance window whenever called
 	var scheduledMaintenance = func(maintenanceWindow *maintenancecustomiov1.MaintenanceWindow) {
 		maintenanceWindow.Status.Active = true
 	}
+	// unscheduleMaintenance() ends a maintenance window
 	var unscheduleMaintenance = func(maintenceWindow *maintenancecustomiov1.MaintenanceWindow) {
 		maintenceWindow.Status.Active = false
 	}

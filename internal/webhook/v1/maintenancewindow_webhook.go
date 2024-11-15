@@ -38,7 +38,7 @@ func SetupMaintenanceWindowWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&maintenancecustomiov1.MaintenanceWindow{}).
 		WithValidator(&MaintenanceWindowCustomValidator{}).
 		WithDefaulter(&MaintenanceWindowCustomDefaulter{
-			Active: false,
+			// Active: false,
 		}).
 		Complete()
 }

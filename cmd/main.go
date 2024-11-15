@@ -37,6 +37,7 @@ import (
 
 	maintenancecustomiov1 "github.com/abdurrehman107/maintenance-window.git/api/v1"
 	"github.com/abdurrehman107/maintenance-window.git/internal/controller"
+	webhookappsv1 "github.com/abdurrehman107/maintenance-window.git/internal/webhook/v1"
 	webhookmaintenancecustomiov1 "github.com/abdurrehman107/maintenance-window.git/internal/webhook/v1"
 	// +kubebuilder:scaffold:imports
 )
@@ -156,6 +157,13 @@ func main() {
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookmaintenancecustomiov1.SetupMaintenanceWindowWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "MaintenanceWindow")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = webhookappsv1.SetupDeploymentWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Deployment")
 			os.Exit(1)
 		}
 	}

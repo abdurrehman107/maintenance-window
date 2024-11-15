@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
+	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d
 	k8s.io/api v0.31.0
 	k8s.io/apimachinery v0.31.0
 	k8s.io/client-go v0.31.0
