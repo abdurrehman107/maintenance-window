@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- maintenanceoperator.io_v1alpha1_maintenancewindow.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

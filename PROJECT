@@ -7,4 +7,14 @@ layout:
 - go.kubebuilder.io/v4
 projectName: maintenance-window
 repo: github.com/abdurrehman107/maintenance-window
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: maintenanceoperator.io
+  group: maintenanceoperator.io
+  kind: MaintenanceWindow
+  path: github.com/abdurrehman107/maintenance-window/api/v1alpha1
+  version: v1alpha1
 version: "3"
