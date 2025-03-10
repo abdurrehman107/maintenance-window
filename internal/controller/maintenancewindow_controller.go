@@ -47,9 +47,13 @@ type MaintenanceWindowReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.1/pkg/reconcile
 func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// fetch the maintenance window object
+	var mw maintenanceoperatoriov1alpha1.MaintenanceWindow
+	if err := r.Get(ctx, req.NamespacedName, &mw); err != nil {
+		log.Error(err, "unable to fetch the mw object")
+	}
 
 	return ctrl.Result{}, nil
 }

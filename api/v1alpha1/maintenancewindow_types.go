@@ -27,15 +27,13 @@ import (
 type MaintenanceWindowSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of MaintenanceWindow. Edit maintenancewindow_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
 }
 
 // MaintenanceWindowStatus defines the observed state of MaintenanceWindow.
 type MaintenanceWindowStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Active bool `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true
