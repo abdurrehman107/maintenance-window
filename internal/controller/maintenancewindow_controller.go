@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -54,6 +55,17 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if err := r.Get(ctx, req.NamespacedName, &mw); err != nil {
 		log.Error(err, "unable to fetch the mw object")
 	}
+
+	// extract the start and end time from the maintenance window object
+	startTime := mw.Spec.StartTime
+	endTime := mw.Spec.EndTime
+
+	// convert the date time to the desired format
+	
+
+	// current time 
+	currentTime := time.Now()
+	
 
 	return ctrl.Result{}, nil
 }
