@@ -27,13 +27,15 @@ import (
 type MaintenanceWindowSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	StartTime string `json:"startTime,omitempty"`
+	EndTime   string `json:"endTime,omitempty"`
 }
 
 // MaintenanceWindowStatus defines the observed state of MaintenanceWindow.
 type MaintenanceWindowStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Active bool `json:"active,omitempty"`
+	Active string `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true

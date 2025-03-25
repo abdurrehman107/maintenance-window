@@ -48,24 +48,31 @@ type MaintenanceWindowReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.1/pkg/reconcile
 func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// fetch the maintenance window object
 	var mw maintenanceoperatoriov1alpha1.MaintenanceWindow
 	if err := r.Get(ctx, req.NamespacedName, &mw); err != nil {
-		log.Error(err, "unable to fetch the mw object")
+		logger.Error(err, "unable to fetch the mw object")
 	}
 
-	// extract the start and end time from the maintenance window object
-	startTime := mw.Spec.StartTime
-	endTime := mw.Spec.EndTime
+	// extract the start end time and current time
+	var startTime, endTime time.Time
+	var err error
+	if startTime, err = time.Parse(time.RFC3339, mw.Spec.StartTime); err != nil {
+		logger.Error(err, "unable to parse the startTime")
+	}
+	if endTime, err = time.Parse(time.RFC3339, mw.Spec.EndTime); err != nil {
+		logger.Error(err, "unable to parse the startTime")
+	}
+	currentTime := time.Now().UTC()
 
-	// convert the date time to the desired format
-	
-
-	// current time 
-	currentTime := time.Now()
-	
+	if currentTime.After(startTime) && currentTime.Before(endTime) {
+		// begin maintenance window change status to true
+	} else if currentTime.After(endTime) {
+		// end maintenance window
+		// change status to expired
+	}
 
 	return ctrl.Result{}, nil
 }
