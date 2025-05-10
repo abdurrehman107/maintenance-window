@@ -57,7 +57,7 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// extract the start end time and current time
-	var startTime, endTime time.Time
+	var startTime, endTime time.Time // time will look something like this 2025-03-25T00:00:00Z
 	var err error
 	if startTime, err = time.Parse(time.RFC3339, mw.Spec.StartTime); err != nil {
 		logger.Error(err, "unable to parse the startTime")
@@ -68,10 +68,18 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	currentTime := time.Now().UTC()
 
 	if currentTime.After(startTime) && currentTime.Before(endTime) {
-		// begin maintenance window change status to true
+		// begin maintenance window change state to true
+		mw.Status.State = maintenanceoperatoriov1alpha1.StateActive
 	} else if currentTime.After(endTime) {
-		// end maintenance window
-		// change status to expired
+		// change state to expired
+		mw.Status.State = maintenanceoperatoriov1alpha1.StateExpired
+	} else if currentTime.Before(startTime) {
+		mw.Status.State = maintenanceoperatoriov1alpha1.StateInactive
+	}
+
+	// update the object in the cluster
+	if err = r.Client.Update(ctx, &mw); err != nil {
+		logger.Error(err, "unable to update the mw object")
 	}
 
 	return ctrl.Result{}, nil

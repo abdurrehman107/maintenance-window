@@ -35,8 +35,17 @@ type MaintenanceWindowSpec struct {
 type MaintenanceWindowStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Active string `json:"active,omitempty"`
+	State MaintenanceWindowState `json:"state,omitempty"`
 }
+
+// MaintenanceWindowState is a custom type for state of the MaintenanceWindow object
+type MaintenanceWindowState string
+
+const (
+	StateActive   MaintenanceWindowState = "active"
+	StateInactive MaintenanceWindowState = "inactive"
+	StateExpired  MaintenanceWindowState = "expired"
+)
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
