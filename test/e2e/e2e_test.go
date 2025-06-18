@@ -1,5 +1,5 @@
 /*
-Copyright 2025.
+Copyright 2024.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,3 +15,49 @@ limitations under the License.
 */
 
 package e2e
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"sigs.k8s.io/e2e-framework/klient/wait"
+	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
+	"sigs.k8s.io/e2e-framework/pkg/envconf"
+	"sigs.k8s.io/e2e-framework/pkg/features"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+)
+
+func TestControllerHealthy(t *testing.T) {
+	feature := features.New("maintenance-window-controller")
+
+	feature.Assess("ensure the maintenance-window pod is running",
+		func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			client := cfg.Client()
+			_ = corev1.AddToScheme(client.Resources().GetScheme())
+			_ = appsv1.AddToScheme(client.Resources().GetScheme())
+
+			// get the etcd controller deployment
+			var deployment appsv1.Deployment
+			if err := client.Resources().Get(ctx, "maintenance-window-controller-manager", namespace, &deployment); err != nil {
+				t.Fatalf("Failed to get deployment: %s", err)
+			}
+
+			// check for deployment to become available with minimum replicas
+			if err := wait.For(
+				conditions.New(client.Resources()).
+					DeploymentConditionMatch(&deployment, appsv1.DeploymentAvailable, corev1.ConditionTrue),
+				wait.WithTimeout(3*time.Minute),
+				wait.WithInterval(10*time.Second),
+			); err != nil {
+				t.Fatal(err)
+			}
+
+			return ctx
+		})
+
+	// 'testEnv' is the env.Environment you set up in TestMain
+	_ = testEnv.Test(t, feature.Feature())
+}
