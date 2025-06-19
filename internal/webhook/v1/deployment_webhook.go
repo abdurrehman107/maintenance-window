@@ -19,13 +19,17 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	maintenanceoperatoriov1alpha1 "github.com/abdurrehman107/maintenance-window/api/v1alpha1"
 )
 
 // nolint:unused
@@ -52,7 +56,7 @@ func SetupDeploymentWebhookWithManager(mgr ctrl.Manager) error {
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type DeploymentCustomValidator struct {
-	// TODO(user): Add more fields as needed for validation
+	client.Client
 }
 
 var _ webhook.CustomValidator = &DeploymentCustomValidator{}
@@ -94,4 +98,21 @@ func (v *DeploymentCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	// TODO(user): fill in your validation logic upon object deletion.
 
 	return nil, nil
+}
+
+func (w *DeploymentCustomValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	var mwList maintenanceoperatoriov1alpha1.MaintenanceWindowList
+	
+	if err := w.Client.List(ctx, &mwList,
+		client.MatchingFields{"status.state": "Active"}); err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
+	// if there is a maintenance window active, deny the deployment
+	if len(mwList.Items) > 0 {
+		msg := fmt.Sprintf("blocked by maintenance window %q until %s", mwList.Items[0], mwList.Items[0].Spec.EndTime)
+		return admission.Denied(msg)
+	}
+
+	return admission.Allowed("no maintenance window active")
 }
