@@ -124,6 +124,24 @@ build-installer: manifests generate kustomize ## Generate a consolidated YAML wi
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > dist/install.yaml
 
+CURRENT_CONTEXT := $(shell kubectl config current-context 2>/dev/null)
+
+KIND_CLUSTER ?= $(shell \
+	if echo "$(CURRENT_CONTEXT)" | grep -q '^kind-'; then \
+		echo "$(CURRENT_CONTEXT)" | sed 's/^kind-//'; \
+	else \
+		kind get clusters 2>/dev/null | head -n 1; \
+	fi)
+
+.PHONY: kind-load
+kind-load:
+	@if [ -z "$(KIND_CLUSTER)" ]; then \
+		echo "No KinD cluster found (is one running?) — skipping image load"; \
+	else \
+		echo "Loading image into KinD cluster '$(KIND_CLUSTER)' …"; \
+		kind load docker-image $(IMG) --name $(KIND_CLUSTER); \
+	fi
+
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -146,6 +164,10 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+
+all-deploy: docker-build kind-load install deploy
+
+all-undeploy: undeploy uninstall
 
 ##@ Dependencies
 
