@@ -102,7 +102,7 @@ func (v *DeploymentCustomValidator) ValidateDelete(ctx context.Context, obj runt
 
 func (w *DeploymentCustomValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	var mwList maintenanceoperatoriov1alpha1.MaintenanceWindowList
-	
+
 	if err := w.Client.List(ctx, &mwList,
 		client.MatchingFields{"status.state": "Active"}); err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
@@ -110,7 +110,7 @@ func (w *DeploymentCustomValidator) Handle(ctx context.Context, req admission.Re
 
 	// if there is a maintenance window active, deny the deployment
 	if len(mwList.Items) > 0 {
-		msg := fmt.Sprintf("blocked by maintenance window %q until %s", mwList.Items[0], mwList.Items[0].Spec.EndTime)
+		msg := fmt.Sprintf("blocked by maintenance window %q until %s", mwList.Items[0].Name, mwList.Items[0].Spec.EndTime)
 		return admission.Denied(msg)
 	}
 
