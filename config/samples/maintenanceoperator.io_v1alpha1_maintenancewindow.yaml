@@ -1,9 +1,10 @@
+# maintenance-window-nightly.yaml
 apiVersion: maintenanceoperator.io.maintenanceoperator.io/v1alpha1
 kind: MaintenanceWindow
 metadata:
-  labels:
-    app.kubernetes.io/name: maintenance-window
-    app.kubernetes.io/managed-by: kustomize
-  name: maintenancewindow-sample
+  name: nightly-maintenance          # 🔄 change the name to whatever fits
+  namespace: default            # 🔄 or omit for “default”
 spec:
-  # TODO(user): Add fields here
+  # UTC RFC-3339 timestamps
+  startTime: "2025-06-19T01:00:00Z"  # 🔄 when maintenance begins
+  endTime:   "2025-06-25T03:00:00Z"  # 🔄 when maintenance ends
