@@ -18,8 +18,9 @@ package controller
 
 import (
 	"context"
+	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,23 +58,35 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// extract the start, end and current time
-	var startTime, endTime metav1.Time // time will look something like this 2025-03-25T00:00:00Z
+	// var startTime, endTime metav1.Time // time will look something like this 2025-03-25T00:00:00Z
 	var err error
 
-	currentTime := metav1.Now()
+	startTime, err := time.Parse(time.RFC3339, mw.Spec.StartTime)
+	if err != nil {
+		logger.Error(err, "unable to parse start time")
+		return ctrl.Result{}, err
+	}
+	
+	endTime, err := time.Parse(time.RFC3339, mw.Spec.EndTime)
+	if err != nil {
+		logger.Error(err, "unable to parse end time")
+		return ctrl.Result{}, err
+	}
 
-	if !currentTime.Equal(&startTime) && currentTime.Before(&endTime) {
+	currentTime := time.Now()
+
+	if !currentTime.Equal(startTime) && currentTime.Before(endTime) {
 		// begin maintenance window change state to true
 		mw.Status.State = maintenanceoperatoriov1alpha1.StateActive
-	} else if !currentTime.Before(&endTime) && !currentTime.Equal(&endTime) {
+	} else if !currentTime.Before(endTime) && !currentTime.Equal(endTime) {
 		// change state to expired
 		mw.Status.State = maintenanceoperatoriov1alpha1.StateExpired
-	} else if currentTime.Before(&startTime) {
+	} else if currentTime.Before(startTime) {
 		mw.Status.State = maintenanceoperatoriov1alpha1.StateInactive
 	}
 
 	// update the object in the cluster
-	if err = r.Client.Update(ctx, &mw); err != nil {
+	if err = r.Status().Update(ctx, &mw); err != nil {
 		logger.Error(err, "unable to update the mw object")
 	}
 

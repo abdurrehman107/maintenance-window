@@ -39,7 +39,7 @@ var deploymentlog = logf.Log.WithName("deployment-resource")
 // SetupDeploymentWebhookWithManager registers the webhook for Deployment in the manager.
 func SetupDeploymentWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&appsv1.Deployment{}).
-		WithValidator(&DeploymentCustomValidator{}).
+		WithValidator(&DeploymentCustomValidator{Client: mgr.GetClient()}).
 		Complete()
 }
 
@@ -56,13 +56,13 @@ func SetupDeploymentWebhookWithManager(mgr ctrl.Manager) error {
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type DeploymentCustomValidator struct {
-	client.Client
+	Client client.Client
 }
 
 var _ webhook.CustomValidator = &DeploymentCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Deployment.
-func (v *DeploymentCustomValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *DeploymentCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	deployment, ok := obj.(*appsv1.Deployment)
 	if !ok {
 		return nil, fmt.Errorf("expected a Deployment object but got %T", obj)
@@ -70,6 +70,23 @@ func (v *DeploymentCustomValidator) ValidateCreate(_ context.Context, obj runtim
 	deploymentlog.Info("Validation for Deployment upon creation", "name", deployment.GetName())
 
 	// TODO(user): fill in your validation logic upon object creation.
+	var mwList maintenanceoperatoriov1alpha1.MaintenanceWindowList
+	if err := v.Client.List(ctx, &mwList); err != nil {
+		return nil, fmt.Errorf("unable to get maintenance window: %v", err)
+	}
+	if len(mwList.Items) == 0 {
+		return nil, nil
+	}
+	for _, mw := range mwList.Items {
+		if mw.Status.State == maintenanceoperatoriov1alpha1.StateActive {
+			deploymentlog.Info(fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime))
+			return admission.Warnings{fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)}, fmt.Errorf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)
+		}
+	}
+	// if mw.Status.State == maintenanceoperatoriov1alpha1.StateActive {
+	// 	deploymentlog.Info(fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime))
+	// 	return admission.Warnings{fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)}, fmt.Errorf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)
+	// }
 
 	return nil, nil
 }
@@ -83,7 +100,6 @@ func (v *DeploymentCustomValidator) ValidateUpdate(_ context.Context, oldObj, ne
 	deploymentlog.Info("Validation for Deployment upon update", "name", deployment.GetName())
 
 	// TODO(user): fill in your validation logic upon object update.
-
 	return nil, nil
 }
 
@@ -100,11 +116,11 @@ func (v *DeploymentCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	return nil, nil
 }
 
-func (w *DeploymentCustomValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
+func (w *DeploymentCustomValidator) Handle(ctx context.Context) admission.Response {
 	var mwList maintenanceoperatoriov1alpha1.MaintenanceWindowList
 
 	if err := w.Client.List(ctx, &mwList,
-		client.MatchingFields{"status.state": "Active"}); err != nil {
+		client.MatchingFields{"status.state": "active"}); err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
