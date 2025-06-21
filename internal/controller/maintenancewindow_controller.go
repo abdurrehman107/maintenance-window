@@ -66,7 +66,7 @@ func (r *MaintenanceWindowReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		logger.Error(err, "unable to parse start time")
 		return ctrl.Result{}, err
 	}
-	
+
 	endTime, err := time.Parse(time.RFC3339, mw.Spec.EndTime)
 	if err != nil {
 		logger.Error(err, "unable to parse end time")
