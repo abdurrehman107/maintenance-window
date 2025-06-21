@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -32,28 +33,43 @@ import (
 
 var _ = Describe("MaintenanceWindow Controller", func() {
 	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+		const resourceName = "mw-test-resource"
+		const namespace = "maintenance-window-system"
 
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: namespace,
 		}
-		maintenancewindow := &maintenanceoperatoriov1alpha1.MaintenanceWindow{}
+
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: namespace},
+		}
+
+		var testMaintenanceWindow = &maintenanceoperatoriov1alpha1.MaintenanceWindow{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "maintenanceoperator.io.maintenanceoperator.io/v1alpha1",
+				Kind:       "MaintenanceWindow",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: namespace,
+			},
+			Spec: maintenanceoperatoriov1alpha1.MaintenanceWindowSpec{
+				StartTime: "2025-06-19T01:00:00Z",
+				EndTime:   "2025-06-25T03:00:00Z",
+			},
+		}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind MaintenanceWindow")
-			err := k8sClient.Get(ctx, typeNamespacedName, maintenancewindow)
+			By("creating the custom resource and namespace for the Kind MaintenanceWindow")
+			_ = k8sClient.Create(ctx, ns)
+
+			err := k8sClient.Get(ctx, typeNamespacedName, testMaintenanceWindow)
+
 			if err != nil && errors.IsNotFound(err) {
-				resource := &maintenanceoperatoriov1alpha1.MaintenanceWindow{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
-					},
-					// TODO(user): Specify other spec details if needed.
-				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, testMaintenanceWindow)).To(Succeed())
 			}
 		})
 
@@ -77,8 +93,6 @@ var _ = Describe("MaintenanceWindow Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })
