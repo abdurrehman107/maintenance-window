@@ -48,7 +48,7 @@ func SetupDeploymentWebhookWithManager(mgr ctrl.Manager) error {
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
-// +kubebuilder:webhook:path=/validate-apps-v1-deployment,mutating=false,failurePolicy=fail,sideEffects=None,groups=apps,resources=deployments,verbs=create;update,versions=v1,name=vdeployment-v1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-apps-v1-deployment,mutating=false,failurePolicy=fail,sideEffects=None,groups=apps,resources=deployments,verbs=create;update;delete,versions=v1,name=vdeployment-v1.kb.io,admissionReviewVersions=v1
 
 // DeploymentCustomValidator struct is responsible for validating the Deployment resource
 // when it is created, updated, or deleted.
@@ -92,14 +92,31 @@ func (v *DeploymentCustomValidator) ValidateCreate(ctx context.Context, obj runt
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Deployment.
-func (v *DeploymentCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *DeploymentCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	deployment, ok := newObj.(*appsv1.Deployment)
 	if !ok {
 		return nil, fmt.Errorf("expected a Deployment object for the newObj but got %T", newObj)
 	}
 	deploymentlog.Info("Validation for Deployment upon update", "name", deployment.GetName())
 
-	// TODO(user): fill in your validation logic upon object update.
+	var mwList maintenanceoperatoriov1alpha1.MaintenanceWindowList
+	if err := v.Client.List(ctx, &mwList); err != nil {
+		return nil, fmt.Errorf("unable to get maintenance window: %v", err)
+	}
+	if len(mwList.Items) == 0 {
+		return nil, nil
+	}
+	for _, mw := range mwList.Items {
+		if mw.Status.State == maintenanceoperatoriov1alpha1.StateActive {
+			deploymentlog.Info(fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime))
+			return admission.Warnings{fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)}, fmt.Errorf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)
+		}
+	}
+	// if mw.Status.State == maintenanceoperatoriov1alpha1.StateActive {
+	// 	deploymentlog.Info(fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime))
+	// 	return admission.Warnings{fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)}, fmt.Errorf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)
+	// }
+
 	return nil, nil
 }
 
@@ -111,7 +128,23 @@ func (v *DeploymentCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	}
 	deploymentlog.Info("Validation for Deployment upon deletion", "name", deployment.GetName())
 
-	// TODO(user): fill in your validation logic upon object deletion.
+	var mwList maintenanceoperatoriov1alpha1.MaintenanceWindowList
+	if err := v.Client.List(ctx, &mwList); err != nil {
+		return nil, fmt.Errorf("unable to get maintenance window: %v", err)
+	}
+	if len(mwList.Items) == 0 {
+		return nil, nil
+	}
+	for _, mw := range mwList.Items {
+		if mw.Status.State == maintenanceoperatoriov1alpha1.StateActive {
+			deploymentlog.Info(fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime))
+			return admission.Warnings{fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)}, fmt.Errorf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)
+		}
+	}
+	// if mw.Status.State == maintenanceoperatoriov1alpha1.StateActive {
+	// 	deploymentlog.Info(fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime))
+	// 	return admission.Warnings{fmt.Sprintf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)}, fmt.Errorf("blocked by maintenance window %q until %s", mw.Name, mw.Spec.EndTime)
+	// }
 
 	return nil, nil
 }
